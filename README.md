@@ -46,6 +46,15 @@ Hindsight Cloud (`@vectorize-io/hindsight-client`) is the agent's memory — the
 
 Flag synthesis itself is Groq (`openai/gpt-oss-120b`); upstream failures map to the labeled 5xx contract in `lib/analyze-errors.ts`. `scripts/memory-loop-test.ts` runs a standalone retain → recall → think smoke test.
 
+```mermaid
+flowchart LR
+    A[Filing text] --> B["POST /api/agent/analyze"]
+    B --> C["Hindsight recall\nper-client bank"]
+    C --> D["Groq flags"]
+    D --> E["Hindsight retain\ndocumentId"]
+    E --> F[UI panels]
+```
+
 ## Layout
 
 ```

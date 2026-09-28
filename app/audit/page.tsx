@@ -106,6 +106,34 @@ export default function AuditPage() {
   );
   const [customText, setCustomText] = useState("");
   const [state, setState] = useState<PanelState>({ status: "idle" });
+  const [resetting, setResetting] = useState(false);
+  const [resetNote, setResetNote] = useState("");
+
+  async function handleReset() {
+    setResetting(true);
+    setResetNote("");
+    try {
+      const response = await fetch("/api/demo/reset", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ clientId: selectedClientId }),
+      });
+      if (!response.ok) {
+        const data = (await response.json().catch(() => ({}))) as { error?: string };
+        throw new Error(data.error ?? `Reset failed (HTTP ${response.status})`);
+      }
+      setState({ status: "idle" });
+      setResetNote(
+        `Memory for ${selectedClient?.name ?? selectedClientId} cleared — next run behaves like a first-ever analysis.`
+      );
+    } catch (error) {
+      setResetNote(
+        `Reset failed: ${error instanceof Error ? error.message : String(error)}`
+      );
+    } finally {
+      setResetting(false);
+    }
+  }
 
   async function handleSubmit() {
     const selected = filings.find((f) => f.id === selectedFilingId);
@@ -248,13 +276,29 @@ export default function AuditPage() {
           />
         </div>
 
-        <button
-          type="submit"
-          disabled={state.status === "loading"}
-          className="rounded-md bg-slate-900 px-4 py-2 text-sm font-medium text-white hover:bg-slate-700 disabled:cursor-not-allowed disabled:opacity-50"
-        >
-          {state.status === "loading" ? "Analyzing…" : "Analyze"}
-        </button>
+        <div className="flex items-center gap-3">
+          <button
+            type="submit"
+            disabled={state.status === "loading"}
+            className="rounded-md bg-slate-900 px-4 py-2 text-sm font-medium text-white hover:bg-slate-700 disabled:cursor-not-allowed disabled:opacity-50"
+          >
+            {state.status === "loading" ? "Analyzing…" : "Analyze"}
+          </button>
+          <button
+            type="button"
+            onClick={() => void handleReset()}
+            disabled={resetting}
+            title="Delete this client's Hindsight bank so the demo starts fresh"
+            className="rounded-md border border-slate-300 px-4 py-2 text-sm font-medium text-slate-600 hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50"
+          >
+            {resetting ? "Resetting…" : "Reset memory"}
+          </button>
+        </div>
+        {resetNote && (
+          <p className="text-xs text-slate-500" role="status">
+            {resetNote}
+          </p>
+        )}
       </form>
 
       <div className="mt-8">

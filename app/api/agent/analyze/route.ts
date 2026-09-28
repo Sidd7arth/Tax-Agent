@@ -89,12 +89,14 @@ async function groqFlags(documentText: string, memories: string[]): Promise<Flag
           temperature: 0.2,
           messages: [
             {
-              role: "system",
-              content:
-                "You are a compliance auditor. Given a document and the agent's memory of related " +
-                "prior documents, list every flag worth raising. Respond with ONLY a JSON array; " +
-                'each element: {"severity": "high"|"medium"|"low", "title": string, "detail": string}. ' +
-                "If nothing is worth flagging, respond with [].",
+          role: "system",
+          content:
+            "You are a compliance auditor. Given a document and the agent's memory of related " +
+            "prior documents, list every flag worth raising. If the memory shows this client " +
+            "committed the same kind of violation before, include one high-severity flag that " +
+            "calls out the repeat and cites the prior document. Respond with ONLY a JSON array; " +
+            'each element: {"severity": "high"|"medium"|"low", "title": string, "detail": string}. ' +
+            "If nothing is worth flagging, respond with [].",
             },
             {
               role: "user",
@@ -239,6 +241,24 @@ export async function POST(request: Request) {
 
     // 2. THINK — flags synthesized from prior memory + document.
     const flags = await groqFlags(documentText, memories);
+
+    // Deterministic escalation backstop: the demo's core claim ("the second
+    // late filing gets escalated because the first is remembered") must not
+    // depend on the LLM noticing the memory. When both the document and a
+    // recalled memory describe a late filing, surface a repeat flag even if
+    // the model left it out.
+    if (
+      memories.length > 0 &&
+      /late/i.test(documentText) &&
+      memories.some((m) => /late/i.test(m)) &&
+      !flags.some((f) => /repeat|second|again/i.test(`${f.title} ${f.detail}`))
+    ) {
+      flags.unshift({
+        severity: "high",
+        title: "Repeated late filing",
+        detail: `Memory shows a prior late filing for this client: "${memories[0]}". This is at least the second occurrence.`,
+      });
+    }
 
     // 3. RETAIN — store this document only after the check, so the next
     //    analysis can use it (the first-ever analysis recalls nothing).
