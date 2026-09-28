@@ -39,3 +39,7 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# allow the committed template, keep real secrets out
+!.env.example
+.freebuff/
