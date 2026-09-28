@@ -13,6 +13,8 @@ import { HINDSIGHT_BANK_ID, getHindsightClient } from "@/lib/hindsight";
  * reproducible without editing .env.local or restarting the server.
  *
  * Not used by the audit flow itself — this is a demo-control endpoint.
+ * It is limited to the hardcoded demo-client allowlist and carries no auth:
+ * fine for the local demo, do NOT expose publicly as-is.
  */
 export async function POST(request: Request) {
   try {

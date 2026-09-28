@@ -46,6 +46,8 @@ Hindsight Cloud (`@vectorize-io/hindsight-client`) is the agent's memory — the
 
 Flag synthesis itself is Groq (`openai/gpt-oss-120b`); upstream failures map to the labeled 5xx contract in `lib/analyze-errors.ts`. `scripts/memory-loop-test.ts` runs a standalone retain → recall → think smoke test.
 
+Repeat escalation has a deterministic backstop: if a recalled memory and the new document both describe a late filing and the model didn't flag a repeat, the route adds a 'Repeated late filing' flag citing the recalled memory. It only fires when Hindsight actually recalled something.
+
 ```mermaid
 flowchart LR
     A[Filing text] --> B["POST /api/agent/analyze"]
